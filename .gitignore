@@ -1,11 +1,27 @@
+# Environment variables
 .env
+
+# Database
 db.sqlite3
+
+# Python
 __pycache__/
 *.pyc
 *.pyo
-.venv/
-venv/
-env/
 *.log
+
+# Docker
+*.env.local
+docker-compose.override.yml
+
+# Static and media files
 staticfiles/
 media/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
