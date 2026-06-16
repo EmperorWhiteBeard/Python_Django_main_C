@@ -11,11 +11,9 @@ A Django web application project containerized with Docker.
 
 ## Requirements
 
-- Python 3.11+
-- pip
-- Docker (for containerized setup)
+- Docker installed on your server/machine
 
-## Getting Started
+## Running with Docker
 
 ### 1. Clone the repository
 
@@ -24,79 +22,66 @@ git clone <your-repo-url>
 cd test_django_pro
 ```
 
-### 2. Create and activate a virtual environment
-
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
-
-### 3. Install dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### 4. Set up environment variables
-
-Copy the example env file and fill in your values:
-
-```bash
-cp .env.example .env
-```
-
-Your `.env` file should look like this:
-
-```
-SECRET_KEY=your-secret-key-here
-DEBUG=True
-ALLOWED_HOSTS=localhost,127.0.0.1
-```
-
-To generate a secure secret key:
-
-```bash
-python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
-```
-
-### 5. Apply migrations
-
-```bash
-python manage.py migrate
-```
-
-### 6. Run the development server
-
-```bash
-python manage.py runserver
-```
-
-The app will be available at `http://127.0.0.1:8000/`.
-
-## Running with Docker
+### 2. Build the Docker image
 
 ```bash
 docker build -t test_django_pro .
-docker run -p 8000:8000 test_django_pro
 ```
 
-The container exposes port **8000** and starts the Django development server on `0.0.0.0:8000`.
+### 3. Run the container
 
-> **Note:** Make sure your `.env` file exists on the host before running the container, or pass environment variables using `-e` flags:
-> ```bash
-> docker run -p 8000:8000 \
->   -e SECRET_KEY=your-key \
->   -e DEBUG=True \
->   -e ALLOWED_HOSTS=localhost,127.0.0.1 \
->   test_django_pro
-> ```
+Always pass environment variables using `-e` flags when running the container:
+
+```bash
+docker run -d -p 8000:8000 --name django_app \
+  -e SECRET_KEY=your-secret-key \
+  -e DEBUG=True \
+  -e ALLOWED_HOSTS=localhost,127.0.0.1,your-server-ip \
+  test_django_pro
+```
+
+> ⚠️ **Important:** Never hardcode secrets in `settings.py` or the `Dockerfile`. Always pass them via `-e` flags at runtime.
+
+The app will be available at `http://your-server-ip:8000/`.
+
+### 4. Verify the container is running
+
+```bash
+docker ps
+```
+
+Look for `django_app` under the `NAMES` column and ensure `STATUS` says `Up`.
+
+### 5. View container logs
+
+```bash
+docker logs django_app
+```
+
+## Redeploying After Code Changes
+
+Whenever you update your code, rebuild the image and restart the container:
+
+```bash
+# Stop and remove the old container
+docker rm -f django_app
+
+# Rebuild the image
+docker build -t test_django_pro .
+
+# Run with environment variables
+docker run -d -p 8000:8000 --name django_app \
+  -e SECRET_KEY=your-secret-key \
+  -e DEBUG=True \
+  -e ALLOWED_HOSTS=localhost,127.0.0.1,your-server-ip \
+  test_django_pro
+```
 
 ## Project Structure
 
 ```
 test_django_pro/
-├── .env                  ← secret, never commit
-├── .env.example          ← safe to commit, template for .env
+├── .env.example          ← template showing required environment variables
 ├── .gitignore
 ├── manage.py
 ├── requirements.txt
@@ -109,33 +94,65 @@ test_django_pro/
     └── wsgi.py
 ```
 
-## Configuration
+## Environment Variables
 
-Settings are managed via environment variables using `django-environ`. All secrets are stored in a `.env` file which is **never committed to version control**.
+All configuration is passed at runtime via Docker `-e` flags. Never commit secrets to the repository.
 
 | Variable | Description | Example |
 |----------|-------------|---------|
 | `SECRET_KEY` | Django secret key | `django-insecure-...` |
 | `DEBUG` | Debug mode | `True` or `False` |
-| `ALLOWED_HOSTS` | Comma-separated allowed hosts | `localhost,127.0.0.1` |
+| `ALLOWED_HOSTS` | Comma-separated allowed hosts | `localhost,127.0.0.1,13.234.110.26` |
 
-`ALLOWED_HOSTS` is configured for:
-- `localhost` and `127.0.0.1` (local development)
-- `13.234.110.26` (remote/cloud server)
+To generate a secure secret key:
+
+```bash
+docker run --rm test_django_pro python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+```
 
 For production, make sure to:
 
-- Set `DEBUG=False` in your `.env`
-- Restrict `ALLOWED_HOSTS` to your actual domain(s)
-- Switch to a production-grade database (e.g. PostgreSQL) — the `libpq-dev` system dependency is already included in the Docker image for this
+- Set `DEBUG=False`
+- Restrict `ALLOWED_HOSTS` to your actual domain(s) — never use `*`
+- Switch to a production-grade database (e.g. PostgreSQL) — `libpq-dev` is already included in the Docker image
+
+## Troubleshooting
+
+### ❌ DisallowedHost Error
+
+**Error:**
+```
+Invalid HTTP_HOST header: 'your-ip:8000'. You may need to add 'your-ip' to ALLOWED_HOSTS.
+```
+
+**Cause:** Your server's public IP is not included in `ALLOWED_HOSTS`.
+
+**Fix:** Stop the container and rerun it with the correct IP in `ALLOWED_HOSTS`:
+
+```bash
+docker rm -f django_app
+
+docker run -d -p 8000:8000 --name django_app \
+  -e SECRET_KEY=your-secret-key \
+  -e DEBUG=True \
+  -e ALLOWED_HOSTS=localhost,127.0.0.1,your-server-ip \
+  test_django_pro
+```
+
+> For quick testing only, you can set `-e ALLOWED_HOSTS=*` — but **never use this in production**.
 
 ## Admin
 
-Access the Django admin panel at `/admin/`. Create a superuser with:
+Create a Django superuser inside the running container:
 
 ```bash
-python manage.py createsuperuser
+docker exec -it django_app python manage.py createsuperuser
 ```
 
-python manage.py createsuperuser
+Run database migrations inside the running container:
+
+```bash
+docker exec -it django_app python manage.py migrate
 ```
+
+Access the admin panel at `http://your-server-ip:8000/admin/`.
