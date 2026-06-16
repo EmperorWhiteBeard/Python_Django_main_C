@@ -25,8 +25,11 @@ SECRET_KEY = 'django-insecure-5cqh@^@7g&-03mk-x-o=xht0^jfu=ujx#i4kr2q#*p@eq71=sy
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+# settings.py
+ALLOWED_HOSTS = ['your-ec2-public-ip', 'localhost', '127.0.0.1']
 
+# Or for quick testing inside the container environment:
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 
