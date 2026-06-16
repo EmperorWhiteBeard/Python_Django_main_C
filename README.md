@@ -13,7 +13,7 @@ A Django web application project containerized with Docker.
 
 - Python 3.11+
 - pip
-- Docker (optional, for containerized setup)
+- Docker (for containerized setup)
 
 ## Getting Started
 
