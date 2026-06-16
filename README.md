@@ -52,7 +52,7 @@ docker run -d -p 8000:8000 --name django_app \
   test_django_pro
 ```
 
-> ⚠️ The app now runs via **Gunicorn** (not Django's dev server). Always set `DEBUG=False` in production.
+>  The app now runs via **Gunicorn** (not Django's dev server). Always set `DEBUG=False` in production.
 
 The app will be available at `http://your-server-ip:8000/`.
 
@@ -129,7 +129,7 @@ For production, make sure to:
 
 ## Troubleshooting
 
-### ❌ DisallowedHost Error
+###  DisallowedHost Error
 
 **Error:**
 ```
@@ -148,7 +148,7 @@ docker run -d -p 8000:8000 --name django_app \
   test_django_pro
 ```
 
-### ❌ Gunicorn Not Found / App Won't Start
+###  Gunicorn Not Found / App Won't Start
 
 Make sure `gunicorn` is listed in your `requirements.txt`. Add it if missing:
 
