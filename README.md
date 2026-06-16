@@ -37,13 +37,35 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 4. Apply migrations
+### 4. Set up environment variables
+
+Copy the example env file and fill in your values:
+
+```bash
+cp .env.example .env
+```
+
+Your `.env` file should look like this:
+
+```
+SECRET_KEY=your-secret-key-here
+DEBUG=True
+ALLOWED_HOSTS=localhost,127.0.0.1
+```
+
+To generate a secure secret key:
+
+```bash
+python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+```
+
+### 5. Apply migrations
 
 ```bash
 python manage.py migrate
 ```
 
-### 5. Run the development server
+### 6. Run the development server
 
 ```bash
 python manage.py runserver
@@ -60,33 +82,50 @@ docker run -p 8000:8000 test_django_pro
 
 The container exposes port **8000** and starts the Django development server on `0.0.0.0:8000`.
 
+> **Note:** Make sure your `.env` file exists on the host before running the container, or pass environment variables using `-e` flags:
+> ```bash
+> docker run -p 8000:8000 \
+>   -e SECRET_KEY=your-key \
+>   -e DEBUG=True \
+>   -e ALLOWED_HOSTS=localhost,127.0.0.1 \
+>   test_django_pro
+> ```
+
 ## Project Structure
 
 ```
 test_django_pro/
-├── test_django_pro/
-│   ├── __init__.py
-│   ├── settings.py
-│   ├── urls.py
-│   ├── asgi.py
-│   └── wsgi.py
+├── .env                  ← secret, never commit
+├── .env.example          ← safe to commit, template for .env
+├── .gitignore
 ├── manage.py
 ├── requirements.txt
-└── Dockerfile
+├── Dockerfile
+└── test_django_pro/
+    ├── __init__.py
+    ├── settings.py
+    ├── urls.py
+    ├── asgi.py
+    └── wsgi.py
 ```
 
 ## Configuration
 
-Settings are managed in `test_django_pro/settings.py`.
+Settings are managed via environment variables using `django-environ`. All secrets are stored in a `.env` file which is **never committed to version control**.
 
-`ALLOWED_HOSTS` is currently configured for:
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `SECRET_KEY` | Django secret key | `django-insecure-...` |
+| `DEBUG` | Debug mode | `True` or `False` |
+| `ALLOWED_HOSTS` | Comma-separated allowed hosts | `localhost,127.0.0.1` |
+
+`ALLOWED_HOSTS` is configured for:
 - `localhost` and `127.0.0.1` (local development)
-- `ur-ec2-publicip` (remote/cloud server)
+- `13.234.110.26` (remote/cloud server)
 
 For production, make sure to:
 
-- Set a secure `SECRET_KEY` — never commit the real key; use environment variables via `django-environ`
-- Set `DEBUG = False`
+- Set `DEBUG=False` in your `.env`
 - Restrict `ALLOWED_HOSTS` to your actual domain(s)
 - Switch to a production-grade database (e.g. PostgreSQL) — the `libpq-dev` system dependency is already included in the Docker image for this
 
@@ -95,5 +134,8 @@ For production, make sure to:
 Access the Django admin panel at `/admin/`. Create a superuser with:
 
 ```bash
+python manage.py createsuperuser
+```
+
 python manage.py createsuperuser
 ```
